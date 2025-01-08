@@ -1,8 +1,13 @@
 from django.http import HttpResponse
+from django.template import loader
+
+from .models import Question, Choice
 
 
 def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
+    latest_questions = Question.objects.order_by("-pub_date")[:5]
+    template = loader.get_template("polls/index.html")
+    return HttpResponse(template.render({"question_list": latest_questions}, request))
 
 
 def details(request, question_id):
