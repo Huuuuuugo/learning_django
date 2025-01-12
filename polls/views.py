@@ -15,16 +15,15 @@ def index(request):
 
 
 def details(request, question_id):
-    try:
-        question = Question.objects.get(pk=question_id)
-    except Question.DoesNotExist:
-        raise Http404("This question doesn't exist or is no longer avaliable")
+    question = get_object_or_404(Question, pk=question_id)
     context = {"question": question}
     return render(request, "polls/details.html", context)
 
 
 def results(request, question_id):
-    return HttpResponse(f"You're looking at the results from question {question_id}")
+    question = get_object_or_404(Question, pk=question_id)
+    context = {"question": question}
+    return render(request, "polls/results.html", context)
 
 
 def vote(request, question_id):
