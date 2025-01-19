@@ -1,0 +1,71 @@
+<form action="{% url "polls:create" %}" method="post">
+    {% csrf_token %}
+    <fieldset>
+        <legend><h1>Create a new poll</h1></legend>
+
+        {% comment %} question field {% endcomment %}
+        <legend><h3>Question:</h3></legend>
+        <input type="text" name="question_text" id="question_text">
+
+        {% comment %} choices field {% endcomment %}
+        <fieldset>
+            <legend><h3>Choices</h3></legend>
+            <div id="choices"></div>
+            <button type="button" id="remove-choice" onclick="removeChoiceField()">-</button>
+            <button type="button" id="add-choice" onclick="addChoiceField()">+</button>
+        </fieldset>
+        <input type="submit" value="Create">
+    </fieldset>
+</form>
+
+<script>
+    choiceCount = 1
+    function addChoiceField() {
+        const choicesField = document.getElementById("choices")
+        
+        if (choiceCount <= 8) {
+            // create element if it's not there already
+            if (!document.getElementById(`choice${choiceCount}`)) {
+                const choiceDiv = document.createElement("div")
+                choiceDiv.className = "choice"
+                choiceDiv.id = `choice${choiceCount}`
+                
+                const choiceLegend = document.createElement("legend")
+                choiceLegend.textContent = `Choice #${choiceCount}`
+        
+                const choiceInput = document.createElement("input")
+                choiceInput.type = "text"
+                choiceInput.name = `choice${choiceCount}`
+        
+                choiceDiv.appendChild(choiceLegend)
+                choiceDiv.appendChild(choiceInput)
+        
+                choicesField.appendChild(choiceDiv)
+            }
+            // activate element if it's already there
+            else {
+                const choiceDiv = document.getElementById(`choice${choiceCount}`)
+                const choiceInput = choiceDiv.getElementsByTagName("input")[0]
+                
+                choiceDiv.style.display = ""
+                choiceInput.disabled = false
+            }
+            choiceCount++
+        }
+    }
+    function removeChoiceField() {
+        // deactivate element
+        if (choiceCount > 3) 
+        {
+            choiceCount--
+            const choiceDiv = document.getElementById(`choice${choiceCount}`)
+            const choiceInput = choiceDiv.getElementsByTagName("input")[0]
+
+            choiceDiv.style.display = "none"
+            choiceInput.disabled = true
+        }
+
+    }
+    addChoiceField()
+    addChoiceField()
+</script>

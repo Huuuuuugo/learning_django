@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
 from django.http import Http404
 from django.urls import reverse
-from django.views import generic
+from django.views import generic, View
 from django.template import loader
 from django.db.models import F
 from django.shortcuts import render, get_object_or_404
@@ -32,28 +32,39 @@ class DetailView(generic.DetailView):
         return Question.objects.filter(pub_date__lte=timezone.now())
 
 
+# TODO: filter out the future questions
+# TODO: create tests
 class ResultsView(generic.DetailView):
     model = Question
     template_name = "polls/results.html"
 
 
-def vote(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    try:
-        choice = question.choice_set.get(pk=request.POST["choice"])
-    except (KeyError, Choice.DoesNotExist):
-        return render(
-            request,
-            "polls/details.html",
-            context={
-                "question": question,
-                "error_message": "Please select one of the options below.",
-            },
-        )
-    else:
-        choice.votes = F("votes") + 1  # Performs the update directly on the database
-        choice.save()
-        # Always return an HttpResponseRedirect after successfully dealing
-        # with POST data. This prevents data from being posted twice if a
-        # user hits the Back button.
-        return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
+class VoteView(View):
+    def post(request, question_id):
+        question = get_object_or_404(Question, pk=question_id)
+        try:
+            choice = question.choice_set.get(pk=request.POST["choice"])
+        except (KeyError, Choice.DoesNotExist):
+            return render(
+                request,
+                "polls/details.html",
+                context={
+                    "question": question,
+                    "error_message": "Please select one of the options below.",
+                },
+            )
+        else:
+            choice.votes = (
+                F("votes") + 1
+            )  # Performs the update directly on the database
+            choice.save()
+
+            return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
+
+
+class CreateQuestionView(View):
+    def get(self, request):
+        return render(request, "polls/create.html")
+
+    def post(self, request):
+        return HttpResponseRedirect(reverse("polls:index"))
