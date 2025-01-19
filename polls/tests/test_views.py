@@ -19,7 +19,7 @@ def create_offset_question(question_text: str, days: int):
     return Question.objects.create(question_text=question_text, pub_date=pub_date)
 
 
-class PollsIndexViewTests(TestCase):
+class IndexViewTests(TestCase):
     def test_no_questions(self):
         """Test if the index page shows an appropriate message when there are no polls avaliable"""
         response = self.client.get(reverse("polls:index"))
@@ -86,3 +86,20 @@ class PollsIndexViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertQuerySetEqual(response.context["question_list"], [past1, past2])
+
+
+class DetailViewTests(TestCase):
+    def test_past_questions(self):
+        """Tests if the detail page is rendered for questions in the past"""
+        question = create_offset_question("test_past_questions", -2)
+        response = self.client.get(reverse("polls:details", args=(question.pk,)))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, question.question_text)
+
+    def test_future_questions(self):
+        """Tests if the detail view returns 404 for questions in the future"""
+        question = create_offset_question("test_future_questions", 2)
+        response = self.client.get(reverse("polls:details", args=(question.pk,)))
+
+        self.assertEqual(response.status_code, 404)
