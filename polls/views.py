@@ -1,11 +1,11 @@
 from django.utils import timezone
-from django.http import HttpResponse, HttpResponseRedirect
-from django.http import Http404
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.urls import reverse
 from django.views import generic, View
 from django.template import loader
 from django.db.models import F
 from django.shortcuts import render, get_object_or_404
+from django.core.handlers.wsgi import WSGIRequest
 
 from .models import Question, Choice
 
@@ -40,7 +40,7 @@ class ResultsView(generic.DetailView):
 
 
 class VoteView(View):
-    def post(request, question_id):
+    def post(self, request, question_id):
         question = get_object_or_404(Question, pk=question_id)
         try:
             choice = question.choice_set.get(pk=request.POST["choice"])
@@ -66,5 +66,29 @@ class CreateQuestionView(View):
     def get(self, request):
         return render(request, "polls/create.html")
 
-    def post(self, request):
+    def post(self, request: WSGIRequest):
+        # TODO: add date field
+        try:
+            # get data and remove empty choices
+            question_text = request.POST["question"]
+            choices = [choice for choice in request.POST.getlist("choices") if choice]
+
+            # validate data
+            if not question_text:
+                return HttpResponseBadRequest("The 'question' key can not be empty")
+            if not (2 <= len(choices) <= 8):
+                return HttpResponseBadRequest(
+                    "The number of choices must be between 2 and 8 inclusive"
+                )
+
+            # create poll
+            question = Question.objects.create(question_text=question_text)
+            for choice in choices:
+                question.choice_set.create(choice_text=choice)
+
+        except KeyError:
+            return HttpResponseBadRequest(
+                "The request body must contain the keys 'question' and 'choices'"
+            )
+
         return HttpResponseRedirect(reverse("polls:index"))

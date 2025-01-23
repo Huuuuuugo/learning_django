@@ -5,7 +5,7 @@
 
         {% comment %} question field {% endcomment %}
         <legend><h3>Question:</h3></legend>
-        <input type="text" name="question_text" id="question_text">
+        <input type="text" name="question" id="question">
 
         {% comment %} choices field {% endcomment %}
         <fieldset>
@@ -35,7 +35,7 @@
         
                 const choiceInput = document.createElement("input")
                 choiceInput.type = "text"
-                choiceInput.name = `choice${choiceCount}`
+                choiceInput.name = "choices"
         
                 choiceDiv.appendChild(choiceLegend)
                 choiceDiv.appendChild(choiceInput)
