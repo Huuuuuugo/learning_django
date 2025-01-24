@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
 
-from polls.models import Question
+from polls.models import Question, Choice
 
 
 def create_offset_question(question_text: str, days: int):
@@ -103,3 +103,131 @@ class DetailViewTests(TestCase):
         response = self.client.get(reverse("polls:details", args=(question.pk,)))
 
         self.assertEqual(response.status_code, 404)
+
+
+class CreateQuestionViewTests(TestCase):
+    url = reverse("polls:create")
+    redirect = reverse("polls:index")
+
+    def test_get_method_renders_create_page(self):
+        """Test the GET request renders the 'create' template."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "polls/create.html")
+
+    def test_post_method_empty_question(self):
+        """Test posting with a missing 'question' field."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {
+            "csrfmiddlewaretoken": csrf_token,
+            "question": "",
+            "choices": ["Choice 1", "Choice 2"],
+        }
+        response = self.client.post(self.url, data)
+        self.assertContains(
+            response, "The 'question' key can not be empty", status_code=400
+        )
+
+    def test_post_method_choices_too_few(self):
+        """Test posting with less than 2 choices."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {
+            "csrfmiddlewaretoken": csrf_token,
+            "question": "Test Question",
+            "choices": ["Choice 1"],
+        }
+        post_response = self.client.post(self.url, data)
+        self.assertContains(
+            post_response,
+            "The number of choices must be between 2 and 8 inclusive (empty choices do not count)",
+            status_code=400,
+        )
+
+    def test_post_method_choices_too_many(self):
+        """Test posting with more than 8 choices."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        choices = ["Choice {}".format(i) for i in range(1, 10)]
+        data = {
+            "csrfmiddlewaretoken": csrf_token,
+            "question": "Test Question",
+            "choices": choices,
+        }
+        response = self.client.post(self.url, data)
+        self.assertContains(
+            response,
+            "The number of choices must be between 2 and 8 inclusive (empty choices do not count)",
+            status_code=400,
+        )
+
+    def test_post_method_missing_choices(self):
+        """Test posting without a 'choices' field."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {"csrfmiddlewaretoken": csrf_token, "question": "Test Question"}
+        response = self.client.post(self.url, data)
+        self.assertContains(
+            response,
+            "The request body must contain the keys 'question' and 'choices'",
+            status_code=400,
+        )
+
+    def test_post_method_missing_question(self):
+        """Test posting without a 'choices' field."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {"csrfmiddlewaretoken": csrf_token, "choices": ["Choice 1", "Choice 2"]}
+        response = self.client.post(self.url, data)
+        self.assertContains(
+            response,
+            "The request body must contain the keys 'question' and 'choices'",
+            status_code=400,
+        )
+
+    def test_post_method_create_question_and_choices(self):
+        """Test posting a valid question and choices."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {
+            "csrfmiddlewaretoken": csrf_token,
+            "question": "Test Question",
+            "choices": ["Choice 1", "Choice 2", "Choice 3"],
+        }
+        response = self.client.post(self.url, data)
+        self.assertRedirects(response, self.redirect)
+
+        # Ensure the Question and Choices were created in the database
+        question = Question.objects.get(question_text="Test Question")
+        choices = Choice.objects.filter(question=question)
+        self.assertEqual(choices.count(), 3)
+        self.assertTrue(
+            all(
+                choice.choice_text in ["Choice 1", "Choice 2", "Choice 3"]
+                for choice in choices
+            )
+        )
+
+    def test_post_method_empty_choices(self):
+        """Test posting with a missing 'question' field."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {
+            "csrfmiddlewaretoken": csrf_token,
+            "question": "Test Question",
+            "choices": ["Choice 1", "", ""],
+        }
+        response = self.client.post(self.url, data)
+        self.assertContains(
+            response,
+            "The number of choices must be between 2 and 8 inclusive (empty choices do not count)",
+            status_code=400,
+        )

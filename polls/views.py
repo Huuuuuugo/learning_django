@@ -69,8 +69,11 @@ class CreateQuestionView(View):
     def post(self, request: WSGIRequest):
         # TODO: add date field
         try:
-            # get data and remove empty choices
+            # get question
             question_text = request.POST["question"]
+
+            # get choices and remove empty choices
+            request.POST["choices"]  # check if the 'choices' key is present
             choices = [choice for choice in request.POST.getlist("choices") if choice]
 
             # validate data
@@ -78,7 +81,7 @@ class CreateQuestionView(View):
                 return HttpResponseBadRequest("The 'question' key can not be empty")
             if not (2 <= len(choices) <= 8):
                 return HttpResponseBadRequest(
-                    "The number of choices must be between 2 and 8 inclusive"
+                    "The number of choices must be between 2 and 8 inclusive (empty choices do not count)"
                 )
 
             # create poll
