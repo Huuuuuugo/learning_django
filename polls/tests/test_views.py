@@ -129,7 +129,7 @@ class CreateQuestionViewTests(TestCase):
         }
         response = self.client.post(self.url, data)
         self.assertContains(
-            response, self.ErrorMessages.EMPTY_QUESTION.value, status_code=400
+            response, self.ErrorMessages.EMPTY_QUESTION.value, status_code=200
         )
 
     def test_post_method_choices_too_few(self):
@@ -146,7 +146,7 @@ class CreateQuestionViewTests(TestCase):
         self.assertContains(
             post_response,
             self.ErrorMessages.INVALID_CHOICE_COUNT.value,
-            status_code=400,
+            status_code=200,
         )
 
     def test_post_method_choices_too_many(self):
@@ -164,7 +164,7 @@ class CreateQuestionViewTests(TestCase):
         self.assertContains(
             response,
             self.ErrorMessages.INVALID_CHOICE_COUNT.value,
-            status_code=400,
+            status_code=200,
         )
 
     def test_post_method_missing_choices(self):
@@ -177,7 +177,7 @@ class CreateQuestionViewTests(TestCase):
         self.assertContains(
             response,
             self.ErrorMessages.MISSING_KEYS.value,
-            status_code=400,
+            status_code=200,
         )
 
     def test_post_method_missing_question(self):
@@ -190,7 +190,7 @@ class CreateQuestionViewTests(TestCase):
         self.assertContains(
             response,
             self.ErrorMessages.MISSING_KEYS.value,
-            status_code=400,
+            status_code=200,
         )
 
     def test_post_method_create_question_and_choices(self):
@@ -231,5 +231,5 @@ class CreateQuestionViewTests(TestCase):
         self.assertContains(
             response,
             self.ErrorMessages.INVALID_CHOICE_COUNT.value,
-            status_code=400,
+            status_code=200,
         )

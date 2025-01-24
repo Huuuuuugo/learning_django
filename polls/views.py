@@ -75,6 +75,8 @@ class CreateQuestionView(View):
 
     def post(self, request: WSGIRequest):
         # TODO: add date field
+        question_text = ""
+        choices = []
         try:
             # get question
             question_text = request.POST["question"]
@@ -85,11 +87,21 @@ class CreateQuestionView(View):
 
             # validate data
             if not question_text:
-                return HttpResponseBadRequest(self.ErrorMessages.EMPTY_QUESTION.value)
+                context = {
+                    "question": question_text,
+                    "choices": choices,
+                    "choice_count": len(choices),
+                    "error_message": self.ErrorMessages.EMPTY_QUESTION.value,
+                }
+                return render(request, "polls/create.html", context=context)
             if not (2 <= len(choices) <= 8):
-                return HttpResponseBadRequest(
-                    self.ErrorMessages.INVALID_CHOICE_COUNT.value
-                )
+                context = {
+                    "question": question_text,
+                    "choices": choices,
+                    "choice_count": len(choices),
+                    "error_message": self.ErrorMessages.INVALID_CHOICE_COUNT.value,
+                }
+                return render(request, "polls/create.html", context=context)
 
             # create poll
             question = Question.objects.create(question_text=question_text)
@@ -97,6 +109,12 @@ class CreateQuestionView(View):
                 question.choice_set.create(choice_text=choice)
 
         except KeyError:
-            return HttpResponseBadRequest(self.ErrorMessages.MISSING_KEYS.value)
+            context = {
+                "question": question_text,
+                "choices": choices,
+                "choice_count": len(choices),
+                "error_message": self.ErrorMessages.MISSING_KEYS.value,
+            }
+            return render(request, "polls/create.html", context=context)
 
         return HttpResponseRedirect(reverse("polls:index"))
