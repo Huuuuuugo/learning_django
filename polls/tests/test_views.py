@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.urls import reverse
 
 from polls.models import Question, Choice
+from polls.views import CreateQuestionView
 
 
 def create_offset_question(question_text: str, days: int):
@@ -108,6 +109,7 @@ class DetailViewTests(TestCase):
 class CreateQuestionViewTests(TestCase):
     url = reverse("polls:create")
     redirect = reverse("polls:index")
+    ErrorMessages = CreateQuestionView.ErrorMessages
 
     def test_get_method_renders_create_page(self):
         """Test the GET request renders the 'create' template."""
@@ -127,7 +129,7 @@ class CreateQuestionViewTests(TestCase):
         }
         response = self.client.post(self.url, data)
         self.assertContains(
-            response, "The 'question' key can not be empty", status_code=400
+            response, self.ErrorMessages.EMPTY_QUESTION.value, status_code=400
         )
 
     def test_post_method_choices_too_few(self):
@@ -143,7 +145,7 @@ class CreateQuestionViewTests(TestCase):
         post_response = self.client.post(self.url, data)
         self.assertContains(
             post_response,
-            "The number of choices must be between 2 and 8 inclusive (empty choices do not count)",
+            self.ErrorMessages.INVALID_CHOICE_COUNT.value,
             status_code=400,
         )
 
@@ -161,7 +163,7 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            "The number of choices must be between 2 and 8 inclusive (empty choices do not count)",
+            self.ErrorMessages.INVALID_CHOICE_COUNT.value,
             status_code=400,
         )
 
@@ -174,7 +176,7 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            "The request body must contain the keys 'question' and 'choices'",
+            self.ErrorMessages.MISSING_KEYS.value,
             status_code=400,
         )
 
@@ -187,7 +189,7 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            "The request body must contain the keys 'question' and 'choices'",
+            self.ErrorMessages.MISSING_KEYS.value,
             status_code=400,
         )
 
@@ -228,6 +230,6 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            "The number of choices must be between 2 and 8 inclusive (empty choices do not count)",
+            self.ErrorMessages.INVALID_CHOICE_COUNT.value,
             status_code=400,
         )

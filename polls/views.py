@@ -1,3 +1,5 @@
+from enum import Enum
+
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.urls import reverse
@@ -63,6 +65,11 @@ class VoteView(View):
 
 
 class CreateQuestionView(View):
+    class ErrorMessages(Enum):
+        INVALID_CHOICE_COUNT = "The number of choices must be between 2 and 8 inclusive (empty choices do not count)"
+        MISSING_KEYS = "The request body must contain the keys 'question' and 'choices'"
+        EMPTY_QUESTION = "The 'question' key can not be empty"
+
     def get(self, request):
         return render(request, "polls/create.html")
 
@@ -78,10 +85,10 @@ class CreateQuestionView(View):
 
             # validate data
             if not question_text:
-                return HttpResponseBadRequest("The 'question' key can not be empty")
+                return HttpResponseBadRequest(self.ErrorMessages.EMPTY_QUESTION.value)
             if not (2 <= len(choices) <= 8):
                 return HttpResponseBadRequest(
-                    "The number of choices must be between 2 and 8 inclusive (empty choices do not count)"
+                    self.ErrorMessages.INVALID_CHOICE_COUNT.value
                 )
 
             # create poll
@@ -90,8 +97,6 @@ class CreateQuestionView(View):
                 question.choice_set.create(choice_text=choice)
 
         except KeyError:
-            return HttpResponseBadRequest(
-                "The request body must contain the keys 'question' and 'choices'"
-            )
+            return HttpResponseBadRequest(self.ErrorMessages.MISSING_KEYS.value)
 
         return HttpResponseRedirect(reverse("polls:index"))
