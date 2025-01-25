@@ -42,6 +42,9 @@ class ResultsView(generic.DetailView):
 
 
 class VoteView(View):
+    class ErrorMessages(Enum):
+        INVALID_CHOICE = "Please select one of the options below."
+
     def post(self, request, question_id):
         question = get_object_or_404(Question, pk=question_id)
         try:
@@ -52,7 +55,7 @@ class VoteView(View):
                 "polls/details.html",
                 context={
                     "question": question,
-                    "error_message": "Please select one of the options below.",
+                    "error_message": self.ErrorMessages.INVALID_CHOICE.name,
                 },
             )
         else:

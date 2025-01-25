@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.urls import reverse
 
 from polls.models import Question, Choice
-from polls.views import CreateQuestionView
+from polls.views import CreateQuestionView, VoteView
 
 
 def create_offset_question(question_text: str, days: int):
@@ -109,7 +109,6 @@ class DetailViewTests(TestCase):
 class CreateQuestionViewTests(TestCase):
     url = reverse("polls:create")
     redirect = reverse("polls:index")
-    ErrorMessages = CreateQuestionView.ErrorMessages
 
     def test_get_method_renders_create_page(self):
         """Test the GET request renders the 'create' template."""
@@ -129,7 +128,9 @@ class CreateQuestionViewTests(TestCase):
         }
         response = self.client.post(self.url, data)
         self.assertContains(
-            response, self.ErrorMessages.EMPTY_QUESTION.value, status_code=200
+            response,
+            CreateQuestionView.ErrorMessages.EMPTY_QUESTION.value,
+            status_code=200,
         )
 
     def test_post_method_choices_too_few(self):
@@ -145,7 +146,7 @@ class CreateQuestionViewTests(TestCase):
         post_response = self.client.post(self.url, data)
         self.assertContains(
             post_response,
-            self.ErrorMessages.INVALID_CHOICE_COUNT.value,
+            CreateQuestionView.ErrorMessages.INVALID_CHOICE_COUNT.value,
             status_code=200,
         )
 
@@ -163,7 +164,7 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            self.ErrorMessages.INVALID_CHOICE_COUNT.value,
+            CreateQuestionView.ErrorMessages.INVALID_CHOICE_COUNT.value,
             status_code=200,
         )
 
@@ -176,7 +177,7 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            self.ErrorMessages.MISSING_KEYS.value,
+            CreateQuestionView.ErrorMessages.MISSING_KEYS.value,
             status_code=200,
         )
 
@@ -189,7 +190,7 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            self.ErrorMessages.MISSING_KEYS.value,
+            CreateQuestionView.ErrorMessages.MISSING_KEYS.value,
             status_code=200,
         )
 
@@ -230,6 +231,83 @@ class CreateQuestionViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertContains(
             response,
-            self.ErrorMessages.INVALID_CHOICE_COUNT.value,
+            CreateQuestionView.ErrorMessages.INVALID_CHOICE_COUNT.value,
             status_code=200,
+        )
+
+
+class VoteViewTests(TestCase):
+    def setUp(self):
+        """Create a question with choices for testing"""
+        self.question = Question.objects.create(
+            question_text="Test Question", pub_date=timezone.now()
+        )
+        self.choice1 = Choice.objects.create(
+            choice_text="Choice 1", question=self.question
+        )
+        self.choice2 = Choice.objects.create(
+            choice_text="Choice 2", question=self.question
+        )
+
+    def test_vote_valid_choice(self):
+        """Test if a valid vote increases the vote count of the choice."""
+        response = self.client.post(
+            reverse("polls:vote", args=(self.question.id,)), {"choice": self.choice1.id}
+        )
+        self.assertRedirects(
+            response, reverse("polls:results", args=(self.question.id,))
+        )
+
+        # Verify the choice's vote count was incremented
+        self.choice1.refresh_from_db()
+        self.assertEqual(self.choice1.votes, 1)
+
+    def test_vote_invalid_choice(self):
+        """Test if an invalid vote shows the correct error message."""
+        invalid_choice_id = 999  # Simulate an invalid choice
+        response = self.client.post(
+            reverse("polls:vote", args=(self.question.id,)),
+            {"choice": invalid_choice_id},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, VoteView.ErrorMessages.INVALID_CHOICE.name)
+
+    def test_vote_no_choice_selected(self):
+        """Test if no choice is selected, it returns the error message."""
+        response = self.client.post(reverse("polls:vote", args=(self.question.id,)), {})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, VoteView.ErrorMessages.INVALID_CHOICE.name)
+
+    def test_vote_on_non_existent_question(self):
+        """Test if voting on a non-existent question returns a 404 error."""
+        non_existent_question_id = 999  # Simulate a non-existent question
+        response = self.client.post(
+            reverse("polls:vote", args=(non_existent_question_id,)),
+            {"choice": self.choice1.id},
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_multiple_votes_on_same_choice(self):
+        """Test if multiple votes on the same choice increment the vote count correctly."""
+        # First vote
+        response = self.client.post(
+            reverse("polls:vote", args=(self.question.id,)), {"choice": self.choice1.id}
+        )
+        self.choice1.refresh_from_db()
+        self.assertEqual(self.choice1.votes, 1)
+
+        # Second vote
+        response = self.client.post(
+            reverse("polls:vote", args=(self.question.id,)), {"choice": self.choice1.id}
+        )
+        self.choice1.refresh_from_db()
+        self.assertEqual(self.choice1.votes, 2)
+
+    def test_vote_redirects_to_results_page(self):
+        """Test if voting redirects to the correct results page."""
+        response = self.client.post(
+            reverse("polls:vote", args=(self.question.id,)), {"choice": self.choice1.id}
+        )
+        self.assertRedirects(
+            response, reverse("polls:results", args=(self.question.id,))
         )
