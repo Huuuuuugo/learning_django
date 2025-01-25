@@ -311,3 +311,85 @@ class VoteViewTests(TestCase):
         self.assertRedirects(
             response, reverse("polls:results", args=(self.question.id,))
         )
+
+
+class ResultsViewTests(TestCase):
+    def setUp(self):
+        """Create a question with choices for testing."""
+        self.question = Question.objects.create(
+            question_text="Test Question", pub_date=timezone.now()
+        )
+        self.choice1 = Choice.objects.create(
+            choice_text="Choice 1", question=self.question, votes=5
+        )
+        self.choice2 = Choice.objects.create(
+            choice_text="Choice 2", question=self.question, votes=3
+        )
+
+        self.question2 = Question.objects.create(
+            question_text="Another Test Question", pub_date=timezone.now()
+        )
+
+    def test_results_view_with_choices(self):
+        """Test if the results view displays the correct question and choices with vote counts."""
+        response = self.client.get(reverse("polls:results", args=(self.question.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        # Check if the correct question text is displayed
+        self.assertContains(response, self.question.question_text)
+
+        # Check if the choices are displayed with their vote counts
+        self.assertContains(response, self.choice1.choice_text)
+        self.assertContains(response, str(self.choice1.votes))
+        self.assertContains(response, self.choice2.choice_text)
+        self.assertContains(response, str(self.choice2.votes))
+
+    def test_results_view_no_choices(self):
+        """Test if the results view behaves correctly when there are no choices."""
+        self.question.choice_set.all().delete()  # Remove choices for this question
+
+        response = self.client.get(reverse("polls:results", args=(self.question.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        # Check if the correct question text is displayed
+        self.assertContains(response, self.question.question_text)
+
+        # Check if no choices are displayed
+        self.assertNotContains(response, "Choice")
+
+    def test_results_view_question_not_found(self):
+        """Test if the results view returns a 404 error when the question does not exist."""
+        non_existent_question_id = 999  # Simulate a non-existent question
+        response = self.client.get(
+            reverse("polls:results", args=(non_existent_question_id,))
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_results_view_pluralize_votes(self):
+        """Test if the pluralize filter works correctly for vote counts."""
+        # Test a choice with 1 vote
+        choice3 = Choice.objects.create(
+            choice_text="Choice 3", question=self.question, votes=1
+        )
+
+        response = self.client.get(reverse("polls:results", args=(self.question.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        # Check if the correct plural form of 'vote' is used
+        self.assertContains(response, "Choice 1 -- 5 votes")
+        self.assertContains(response, "Choice 2 -- 3 votes")
+        self.assertContains(response, "Choice 3 -- 1 vote")
+
+    def test_results_view_no_votes(self):
+        """Test if the results view handles the case where no votes have been cast."""
+        self.choice1.votes = 0
+        self.choice2.votes = 0
+        self.choice1.save()
+        self.choice2.save()
+
+        response = self.client.get(reverse("polls:results", args=(self.question.id,)))
+        self.assertEqual(response.status_code, 200)
+
+        # Check if the correct vote count (0 votes) is displayed
+        self.assertContains(response, "Choice 1 -- 0 votes")
+        self.assertContains(response, "Choice 2 -- 0 votes")

@@ -34,8 +34,6 @@ class DetailView(generic.DetailView):
         return Question.objects.filter(pub_date__lte=timezone.now())
 
 
-# TODO: filter out the future questions
-# TODO: create tests
 class ResultsView(generic.DetailView):
     model = Question
     template_name = "polls/results.html"
