@@ -1,11 +1,14 @@
-{% load static %}
-<link href="{% static 'css/tailwind.css' %}" rel="stylesheet">
+{% extends "polls/default.html" %}
 
-<body>
-    {% include "polls/toolbar.html" %}
-    {% include "polls/header.html" with content="Home" %}
+{% block title %}Polls | Home{% endblock title %}
+
+{% block header %}
+<p>Browse polls</p>
+{% endblock header %}
+
+{% block body %}
     {% if question_list %}
-    <div class="flex-row ml-10">
+    <div class="flex-row">
     <h1 class="font-bold text-3xl mb-2">Latest questions</h1>
         <ul>
             {% for question in question_list %}
@@ -16,4 +19,4 @@
     {% else %}
         <p>No polls avaliable.</p>
     {% endif %}
-</body>
+{% endblock body %}

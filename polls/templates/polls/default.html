@@ -1,0 +1,20 @@
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}{% endblock title %}</title>
+        <link href="{% static 'css/tailwind.css' %}" rel="stylesheet">
+    </head>
+    <body class="bg-gray-900 text-gray-300">
+        {% include "polls/toolbar.html" %}
+        
+        <header class="bg-emerald-600 min-h-18 text-green-200 ps-15 flex items-center text-3xl pb-2.5 mb-4">
+            {% block header %}{% endblock header %}
+        </header>
+
+        <section class="ms-15">
+            {% block body %}{% endblock body %}
+        </section>
+    </body>
+</html>

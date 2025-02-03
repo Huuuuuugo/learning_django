@@ -1,89 +1,95 @@
-<form action="{% url "polls:create" %}" method="post">
-    {% csrf_token %}
-    <fieldset>
-        <legend><h1>Create a new poll</h1></legend>
+{% extends "polls/default.html" %}
 
-        {% comment %} question field {% endcomment %}
-        <legend><h3>Question:</h3></legend>
-        <input type="text" name="question" id="question" value="{{ question }}">
+{% block title %}Polls | Create{% endblock title %}
 
-        {% comment %} choices field {% endcomment %}
+{% block header %}Create a new poll{% endblock header %}Create a new poll
+
+{% block body %}
+    <form action="{% url "polls:create" %}" method="post">
+        {% csrf_token %}
         <fieldset>
-            <legend><h3>Choices</h3></legend>
-            <div id="choices">
-                {% for choice in choices %}
-                    <div>
-                        <legend>Choice #{{ forloop.counter }}</legend>
-                        <input type="text" name="choices" value="{{ choice }}">
-                    </div>
-                {% endfor %}
-            </div>
-            <button type="button" id="remove-choice" onclick="removeChoiceField()">-</button>
-            <button type="button" id="add-choice" onclick="addChoiceField()">+</button>
-        </fieldset>
-        <input type="submit" value="Create">
-        {% if error_message %}<p><strong>{{ error_message|safe }}</strong></p>{% endif %}
-    </fieldset>
-</form>
+            <legend><h1>Create a new poll</h1></legend>
 
-<script>
-    {% if choice_count %}
-    choiceCount = {{ choice_count|add:1 }}
-    {% else %}
-    choiceCount = 1
-    {% endif %}
-    function addChoiceField() {
-        const choicesField = document.getElementById("choices")
-        
-        if (choiceCount <= 8) {
-            // create element if it's not there already
-            if (!document.getElementById(`choice${choiceCount}`)) {
-                const choiceDiv = document.createElement("div")
-                choiceDiv.className = "choice"
-                choiceDiv.id = `choice${choiceCount}`
-                
-                const choiceLegend = document.createElement("legend")
-                choiceLegend.textContent = `Choice #${choiceCount}`
-        
-                const choiceInput = document.createElement("input")
-                choiceInput.type = "text"
-                choiceInput.name = "choices"
-        
-                choiceDiv.appendChild(choiceLegend)
-                choiceDiv.appendChild(choiceInput)
-        
-                choicesField.appendChild(choiceDiv)
+            {% comment %} question field {% endcomment %}
+            <legend><h3>Question:</h3></legend>
+            <input type="text" name="question" id="question" value="{{ question }}">
+
+            {% comment %} choices field {% endcomment %}
+            <fieldset>
+                <legend><h3>Choices</h3></legend>
+                <div id="choices">
+                    {% for choice in choices %}
+                        <div>
+                            <legend>Choice #{{ forloop.counter }}</legend>
+                            <input type="text" name="choices" value="{{ choice }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="remove-choice" onclick="removeChoiceField()">-</button>
+                <button type="button" id="add-choice" onclick="addChoiceField()">+</button>
+            </fieldset>
+            <input type="submit" value="Create">
+            {% if error_message %}<p><strong>{{ error_message|safe }}</strong></p>{% endif %}
+        </fieldset>
+    </form>
+
+    <script>
+        {% if choice_count %}
+        choiceCount = {{ choice_count|add:1 }}
+        {% else %}
+        choiceCount = 1
+        {% endif %}
+        function addChoiceField() {
+            const choicesField = document.getElementById("choices")
+            
+            if (choiceCount <= 8) {
+                // create element if it's not there already
+                if (!document.getElementById(`choice${choiceCount}`)) {
+                    const choiceDiv = document.createElement("div")
+                    choiceDiv.className = "choice"
+                    choiceDiv.id = `choice${choiceCount}`
+                    
+                    const choiceLegend = document.createElement("legend")
+                    choiceLegend.textContent = `Choice #${choiceCount}`
+            
+                    const choiceInput = document.createElement("input")
+                    choiceInput.type = "text"
+                    choiceInput.name = "choices"
+            
+                    choiceDiv.appendChild(choiceLegend)
+                    choiceDiv.appendChild(choiceInput)
+            
+                    choicesField.appendChild(choiceDiv)
+                }
+                // activate element if it's already there
+                else {
+                    const choiceDiv = document.getElementById(`choice${choiceCount}`)
+                    const choiceInput = choiceDiv.getElementsByTagName("input")[0]
+                    
+                    choiceDiv.style.display = ""
+                    choiceInput.disabled = false
+                }
+                choiceCount++
             }
-            // activate element if it's already there
-            else {
+        }
+        function removeChoiceField() {
+            // deactivate element
+            if (choiceCount > 3) 
+            {
+                choiceCount--
                 const choiceDiv = document.getElementById(`choice${choiceCount}`)
                 const choiceInput = choiceDiv.getElementsByTagName("input")[0]
-                
-                choiceDiv.style.display = ""
-                choiceInput.disabled = false
+
+                choiceDiv.style.display = "none"
+                choiceInput.disabled = true
             }
-            choiceCount++
-        }
-    }
-    function removeChoiceField() {
-        // deactivate element
-        if (choiceCount > 3) 
-        {
-            choiceCount--
-            const choiceDiv = document.getElementById(`choice${choiceCount}`)
-            const choiceInput = choiceDiv.getElementsByTagName("input")[0]
 
-            choiceDiv.style.display = "none"
-            choiceInput.disabled = true
         }
-
-    }
-    {% if choice_count == 1 %}
-    addChoiceField()
-    {% elif choice_count %}
-    {% comment %} add nothing {% endcomment %}
-    {% else %}
-    addChoiceField()
-    addChoiceField()
-    {% endif %}
-</script>
+        {% if choice_count == 1 %}
+        addChoiceField()
+        {% elif not choice_count %}
+        addChoiceField()
+        addChoiceField()
+        {% endif %}
+    </script>
+{% endblock body %}
