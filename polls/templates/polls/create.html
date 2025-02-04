@@ -5,31 +5,31 @@
 {% block header %}Create a new poll{% endblock header %}Create a new poll
 
 {% block body %}
-    <form action="{% url "polls:create" %}" method="post">
-        {% csrf_token %}
+{% if error_message %}<p class="bg-red-800 p-2 rounded-md">{{ error_message|safe }}</p>{% endif %}
+<form action="{% url "polls:create" %}" method="post">
+    {% csrf_token %}
+    <fieldset>
+        {% comment %} question field {% endcomment %}
+        <legend><h3 class="text-xl font-bold mb-2">Question</h3></legend>
+        <input type="text" name="question" id="question" value="{{ question }}" class="border-1 rounded-md bg-gray-800 ml-2 mb-4 ps-2 p-1">
+        
+        {% comment %} choices field {% endcomment %}
         <fieldset>
-            <legend><h1>Create a new poll</h1></legend>
-
-            {% comment %} question field {% endcomment %}
-            <legend><h3>Question:</h3></legend>
-            <input type="text" name="question" id="question" value="{{ question }}">
-
-            {% comment %} choices field {% endcomment %}
-            <fieldset>
-                <legend><h3>Choices</h3></legend>
-                <div id="choices">
+            <legend><h3 class="text-xl font-bold mb-2">Choices</h3></legend>
+            <div class="flex space-x-2 justify-end max-w-60">
+                <button type="button" id="remove-choice" onclick="removeChoiceField()" class="bg-red-700 disabled:bg-gray-500 rounded-md h-5 w-5 flex items-center justify-center">-</button>
+                <button type="button" id="add-choice" onclick="addChoiceField()" class="bg-green-700 disabled:bg-gray-500 rounded-md h-5 w-5 flex items-center justify-center">+</button>
+                <button type="submit" class="bg-green-800 rounded-md h-5 w-15 pb-1 flex items-center justify-center">Create</button>
+                </div>
+                <div id="choices" class="grid sm:grid-cols-1 md:grid-flow-col md:grid-cols-2 md:grid-rows-4 max-w-100">
                     {% for choice in choices %}
-                        <div>
-                            <legend>Choice #{{ forloop.counter }}</legend>
-                            <input type="text" name="choices" value="{{ choice }}">
+                        <div class="choice">
+                            <legend class="text-md font-bold ml-4">Choice #{{ forloop.counter }}</legend>
+                            <input type="text" name="choices" value="{{ choice }}" class="border-1 rounded-md bg-gray-800 ml-2 mb-4 ps-2 p-1">
                         </div>
                     {% endfor %}
                 </div>
-                <button type="button" id="remove-choice" onclick="removeChoiceField()">-</button>
-                <button type="button" id="add-choice" onclick="addChoiceField()">+</button>
             </fieldset>
-            <input type="submit" value="Create">
-            {% if error_message %}<p><strong>{{ error_message|safe }}</strong></p>{% endif %}
         </fieldset>
     </form>
 
@@ -39,6 +39,28 @@
         {% else %}
         choiceCount = 1
         {% endif %}
+
+        function updateChoiceButtons() {
+            const removeChoice = document.getElementById("remove-choice")
+            const addChoice = document.getElementById("add-choice")
+            
+            // update remove-choice
+            if (choiceCount <= 3) {
+                removeChoice.disabled = true
+            }
+            else {
+                removeChoice.disabled = false
+            }
+            
+            // update add-choice
+            if (choiceCount > 8) {
+                addChoice.disabled = true
+            }
+            else {
+                addChoice.disabled = false
+            }
+        }
+
         function addChoiceField() {
             const choicesField = document.getElementById("choices")
             
@@ -50,9 +72,11 @@
                     choiceDiv.id = `choice${choiceCount}`
                     
                     const choiceLegend = document.createElement("legend")
+                    choiceLegend.className = "text-md font-bold ml-4"
                     choiceLegend.textContent = `Choice #${choiceCount}`
-            
+
                     const choiceInput = document.createElement("input")
+                    choiceInput.className = "border-1 rounded-md bg-gray-800 ml-2 mb-4 ps-2 p-1"
                     choiceInput.type = "text"
                     choiceInput.name = "choices"
             
@@ -70,6 +94,7 @@
                     choiceInput.disabled = false
                 }
                 choiceCount++
+                updateChoiceButtons()
             }
         }
         function removeChoiceField() {
@@ -82,8 +107,8 @@
 
                 choiceDiv.style.display = "none"
                 choiceInput.disabled = true
+                updateChoiceButtons()
             }
-
         }
         {% if choice_count == 1 %}
         addChoiceField()

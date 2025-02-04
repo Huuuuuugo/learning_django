@@ -1,1 +1,8 @@
-@import "tailwindcss"
+@import "tailwindcss";
+
+@theme {
+    --color-django-200: #c9f0dd;
+    --color-django-500: #44b78b;
+    --color-django-600: #187f58;
+    --color-django-900: #0c4b33;
+}

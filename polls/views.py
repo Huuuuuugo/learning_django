@@ -53,7 +53,7 @@ class VoteView(View):
                 "polls/details.html",
                 context={
                     "question": question,
-                    "error_message": self.ErrorMessages.INVALID_CHOICE.name,
+                    "error_message": self.ErrorMessages.INVALID_CHOICE.value,
                 },
             )
         else:
