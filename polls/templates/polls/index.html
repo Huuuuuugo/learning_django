@@ -10,9 +10,9 @@
     {% if question_list %}
     <div class="flex-row">
     <h1 class="font-bold text-3xl mb-2">Latest questions</h1>
-        <ul>
+        <ul class="space-y-2 lg:mx-4">
             {% for question in question_list %}
-                <li><a class="text-blue-300 underline visited:text-orange-400 md:text-lg sm:text-4xl" href="{% url 'polls:details' question.id %}">{{question.question_text}}</a></li>
+                <li><a class="text-blue-300 hover:text-blue-400 underline visited:text-orange-400 lg:text-lg hover:visited:text-orange-500" href="{% url 'polls:details' question.id %}">{{question.question_text}}</a></li>
             {% endfor %}
         </ul>
     </div>
