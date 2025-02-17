@@ -270,13 +270,13 @@ class VoteViewTests(TestCase):
             {"choice": invalid_choice_id},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, VoteView.ErrorMessages.INVALID_CHOICE.name)
+        self.assertContains(response, VoteView.ErrorMessages.INVALID_CHOICE.value)
 
     def test_vote_no_choice_selected(self):
         """Test if no choice is selected, it returns the error message."""
         response = self.client.post(reverse("polls:vote", args=(self.question.id,)), {})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, VoteView.ErrorMessages.INVALID_CHOICE.name)
+        self.assertContains(response, VoteView.ErrorMessages.INVALID_CHOICE.value)
 
     def test_vote_on_non_existent_question(self):
         """Test if voting on a non-existent question returns a 404 error."""
