@@ -8,8 +8,12 @@ from django.template import loader
 from django.db.models import F
 from django.shortcuts import render, get_object_or_404
 from django.core.handlers.wsgi import WSGIRequest
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+from django.contrib.auth.forms import UserCreationForm
 
 from .models import Question, Choice
+from .forms import LoginForm
 
 
 class IndexView(generic.ListView):
@@ -119,3 +123,44 @@ class CreateQuestionView(View):
             return render(request, "polls/create.html", context=context)
 
         return HttpResponseRedirect(reverse("polls:index"))
+
+
+class LoginView(View):
+    def get(self, request: WSGIRequest):
+        form = LoginForm()
+        return render(
+            request, "polls/auth.html", context={"form": form, "name": "login"}
+        )
+
+    def post(self, request: WSGIRequest):
+        form = LoginForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+
+            return HttpResponseRedirect(reverse("polls:index"))
+
+        else:
+            return render(
+                request, "polls/auth.html", context={"form": form, "name": "login"}
+            )
+
+
+class RegisterView(View):
+    def get(self, request: WSGIRequest):
+        form = UserCreationForm()
+        return render(
+            request, "polls/auth.html", context={"form": form, "name": "register"}
+        )
+
+    def post(self, request: WSGIRequest):
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return HttpResponseRedirect(reverse("polls:index"))
+
+        else:
+            return render(
+                request, "polls/auth.html", context={"form": form, "name": "register"}
+            )

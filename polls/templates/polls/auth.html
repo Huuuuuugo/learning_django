@@ -1,0 +1,15 @@
+{% extends "polls/default.html" %}
+
+{% block title %}Polls | {{ name|title }}{% endblock title %}
+
+{% block header %}{{ name|title }}{% endblock header %}
+
+{% block body %}
+<form action="{% url "polls:"|add:name %}" method="post">
+    {% csrf_token %}
+    <fieldset>
+        {{ form }}
+        <button type="submit" class="bg-green-800 hover:bg-green-900 cursor-pointer rounded-md h-5 pl-2 pr-2 pb-1 flex items-center justify-center">{{ name|title }}</button>
+    </fieldset>
+</form>
+{% endblock body %}
