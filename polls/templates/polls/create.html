@@ -11,21 +11,21 @@
     <fieldset>
         {% comment %} question field {% endcomment %}
         <legend><h3 class="text-xl font-bold mb-2">Question</h3></legend>
-        <input type="text" name="question" id="question" value="{{ question }}" class="border-1 rounded-md bg-gray-800 ml-2 mb-4 ps-2 p-1">
+        <input type="text" name="question" id="question" value="{{ question }}">
         
         {% comment %} choices field {% endcomment %}
         <fieldset>
             <legend><h3 class="text-xl font-bold mb-2">Choices</h3></legend>
             <div class="flex space-x-2 justify-end max-w-60">
-                <button type="button" id="remove-choice" onclick="removeChoiceField()" class="bg-red-700 disabled:bg-gray-500 rounded-md h-5 w-5 flex items-center justify-center">-</button>
-                <button type="button" id="add-choice" onclick="addChoiceField()" class="bg-green-700 disabled:bg-gray-500 rounded-md h-5 w-5 flex items-center justify-center">+</button>
-                <button type="submit" class="bg-green-800 rounded-md h-5 w-15 pb-1 flex items-center justify-center">Create</button>
+                <button type="button" id="remove-choice" onclick="removeChoiceField()" class="bg-red-700 hover:bg-red-800 cursor-pointer disabled:bg-gray-500 rounded-md h-5 w-5 flex items-center justify-center">-</button>
+                <button type="button" id="add-choice" onclick="addChoiceField()" class="bg-green-700 hover:bg-green-800 cursor-pointer disabled:bg-gray-500 rounded-md h-5 w-5 flex items-center justify-center">+</button>
+                <button type="submit" class="bg-green-800 hover:bg-green-900 cursor-pointer rounded-md h-5 w-15 pb-1 flex items-center justify-center">Create</button>
                 </div>
                 <div id="choices" class="grid sm:grid-cols-1 md:grid-flow-col md:grid-cols-2 md:grid-rows-4 max-w-100">
                     {% for choice in choices %}
                         <div class="choice">
                             <legend class="text-md font-bold ml-4">Choice #{{ forloop.counter }}</legend>
-                            <input type="text" name="choices" value="{{ choice }}" class="border-1 rounded-md bg-gray-800 ml-2 mb-4 ps-2 p-1">
+                            <input type="text" name="choices" value="{{ choice }}">
                         </div>
                     {% endfor %}
                 </div>
