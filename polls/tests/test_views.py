@@ -1,11 +1,15 @@
 from datetime import timedelta
+from urllib.parse import urlsplit, urlencode, unquote, quote
 
 from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
 
 from polls.models import Question, Choice
 from polls.views import CreateQuestionView, VoteView
+from polls.forms import LoginForm
 
 
 def create_offset_question(question_text: str, days: int):
@@ -110,6 +114,16 @@ class CreateQuestionViewTests(TestCase):
     url = reverse("polls:create")
     redirect = reverse("polls:index")
 
+    def login(self):
+        # Create a test user
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpassword123",
+        )
+
+        # Authenticate the test client
+        self.client.login(username="testuser", password="testpassword123")
+
     def test_get_method_renders_create_page(self):
         """Test the GET request renders the 'create' template."""
         response = self.client.get(self.url)
@@ -196,6 +210,7 @@ class CreateQuestionViewTests(TestCase):
 
     def test_post_method_create_question_and_choices(self):
         """Test posting a valid question and choices."""
+        self.login()
         response = self.client.get(self.url)
         csrf_token = response.context["csrf_token"]
 
@@ -217,6 +232,31 @@ class CreateQuestionViewTests(TestCase):
                 for choice in choices
             )
         )
+
+    def test_post_method_unauthenticated(self):
+        """Test posting a valid question and choices."""
+        response = self.client.get(self.url)
+        csrf_token = response.context["csrf_token"]
+
+        data = {
+            "csrfmiddlewaretoken": csrf_token,
+            "question": "Test Question",
+            "choices": ["Choice 1", "Choice 2", "Choice 3"],
+        }
+        response = self.client.post(self.url, data)
+
+        # Check redirect status code
+        self.assertEqual(response.status_code, 302)
+
+        # Get path components
+        expected_path = reverse("polls:login")
+        actual_path = urlsplit(response.url).path  # Ignores query params
+
+        # Assert path matches
+        self.assertEqual(actual_path, expected_path)
+
+        # Assert url includes the next param pointing to the poll creation page
+        self.assertIn(urlencode({"next": reverse("polls:create")}), response.url)
 
     def test_post_method_empty_choices(self):
         """Test posting with a missing 'question' field."""
@@ -393,3 +433,143 @@ class ResultsViewTests(TestCase):
         # Check if the correct vote count (0 votes) is displayed
         self.assertContains(response, "Choice 1 -- 0 votes")
         self.assertContains(response, "Choice 2 -- 0 votes")
+
+
+class LoginViewTests(TestCase):
+    error_messages = LoginForm.error_messages
+
+    @classmethod
+    def setUpTestData(cls):
+        # Create a test user
+        cls.user = User.objects.create_user(username="testuser", password="testpass123")
+        cls.login_url = reverse("polls:login")
+        cls.index_url = reverse("polls:index")
+        cls.create_url = reverse("polls:create")
+
+    def test_get_request(self):
+        """Test GET request renders the login form correctly."""
+        response = self.client.get(self.login_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "polls/auth.html")
+        self.assertIsInstance(response.context["form"], LoginForm)
+        self.assertEqual(response.context["name"], "login")
+        self.assertEqual(response.context["params"], "")
+
+    def test_post_valid_credentials_redirects_to_index(self):
+        """Test valid login redirects to index when no 'next' parameter."""
+        response = self.client.post(
+            self.login_url, {"username": "testuser", "password": "testpass123"}
+        )
+        self.assertRedirects(response, self.index_url)
+        # Verify the user is logged in
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_post_valid_credentials_redirects_to_next(self):
+        """Test valid login redirects to 'next' URL parameter."""
+        url = f"{self.login_url}?next={self.create_url}"
+        response = self.client.post(
+            url, {"username": "testuser", "password": "testpass123"}
+        )
+        self.assertRedirects(response, self.create_url)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_post_invalid_credentials_shows_errors(self):
+        """Test invalid login shows form errors."""
+        response = self.client.post(
+            self.login_url, {"username": "testuser", "password": "wrongpass"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["user"].is_authenticated)
+        self.assertContains(
+            response,
+            self.error_messages["invalid_login"] % {"username": "username"},
+        )
+
+
+class RegisterViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.register_url = reverse("polls:register")
+        cls.index_url = reverse("polls:index")
+        cls.create_url = reverse("polls:create")
+        cls.login_url = reverse("polls:login")
+
+    def test_get_request(self):
+        """Test GET request renders registration form correctly."""
+        response = self.client.get(self.register_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "polls/auth.html")
+        self.assertIsInstance(response.context["form"], UserCreationForm)
+        self.assertEqual(response.context["name"], "register")
+        self.assertEqual(response.context["params"], "")
+
+    def test_post_valid_registration_redirects_to_index(self):
+        """Test successful registration redirects to index."""
+        data = {
+            "username": "newuser",
+            "password1": "ComplexPass123!",
+            "password2": "ComplexPass123!",
+        }
+        response = self.client.post(self.register_url, data)
+        self.assertRedirects(response, self.index_url)
+        self.assertTrue(User.objects.filter(username="newuser").exists())
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_post_valid_registration_redirects_to_next(self):
+        """Test registration with next parameter redirects correctly."""
+        url = f"{self.register_url}?next={self.create_url}"
+        data = {
+            "username": "nextuser",
+            "password1": "NextPass123!",
+            "password2": "NextPass123!",
+        }
+        response = self.client.post(url, data)
+        self.assertRedirects(response, self.create_url)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_authentication_after_registration(self):
+        """Test user is properly logged in after registration."""
+        data = {
+            "username": "authuser",
+            "password1": "AuthPass123!",
+            "password2": "AuthPass123!",
+        }
+        response = self.client.post(self.register_url, data)
+        user = response.wsgi_request.user
+        self.assertTrue(user.is_authenticated)
+        self.assertEqual(user.username, "authuser")
+
+
+class LogoutViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="testuser", password="testpass123")
+        cls.logout_url = reverse("polls:logout")
+        cls.index_url = reverse("polls:index")
+
+    def test_logout_redirects_to_index(self):
+        """Test logout redirects to index page"""
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(self.logout_url)
+        self.assertRedirects(response, self.index_url)
+
+    def test_user_logged_out_after_request(self):
+        """Test user authentication is removed after logout"""
+        self.client.login(username="testuser", password="testpass123")
+        self.assertTrue(self.client.session["_auth_user_id"])  # Verify logged in
+
+        self.client.get(self.logout_url)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_logout_when_not_authenticated(self):
+        """Test logout works when user isn't logged in"""
+        response = self.client.get(self.logout_url)
+        self.assertRedirects(response, self.index_url)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_logout_with_query_params(self):
+        """Test query parameters don't affect logout behavior"""
+        url = f"{self.logout_url}?next=/unexpected/"
+        self.client.login(username="testuser", password="testpass123")
+        response = self.client.get(url)
+        self.assertRedirects(response, self.index_url)  # Should still go to index
