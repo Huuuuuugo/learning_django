@@ -5,11 +5,16 @@
 {% block header %}{{ name|title }}{% endblock header %}
 
 {% block body %}
-<form action="{% url "polls:"|add:name %}" method="post">
+<form action="{% url "polls:"|add:name %}{{ params }}" method="post">
     {% csrf_token %}
     <fieldset>
         {{ form }}
         <button type="submit" class="bg-green-800 hover:bg-green-900 cursor-pointer rounded-md h-5 pl-2 pr-2 pb-1 flex items-center justify-center">{{ name|title }}</button>
     </fieldset>
 </form>
+{% if name == 'register' %}
+<p>Already have an account? <a href="{% url "polls:login" %}{{ params }}">Log in</a>.</p>
+{% elif name == 'login' %}
+<p>First time here? <a href="{% url "polls:register" %}{{ params }}">Create account</a>.</p>
+{% endif %}
 {% endblock body %}

@@ -1,4 +1,5 @@
 from enum import Enum
+from urllib.parse import urlencode
 
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
@@ -25,7 +26,6 @@ class IndexView(generic.ListView):
         Return the last five published questions (not including those set to be
         published in the future).
         """
-        print(self.request.user)
         return Question.objects.filter(pub_date__lte=timezone.now()).order_by(
             "-pub_date"
         )[:5]
@@ -109,10 +109,22 @@ class CreateQuestionView(View):
                 }
                 return render(request, "polls/create.html", context=context)
 
-            # create poll
-            question = Question.objects.create(question_text=question_text)
-            for choice in choices:
-                question.choice_set.create(choice_text=choice)
+            if request.user.is_authenticated:
+                # create poll
+                question = Question.objects.create(question_text=question_text)
+                for choice in choices:
+                    question.choice_set.create(choice_text=choice)
+            else:
+                # get params
+                params = {"next": reverse("polls:create")}
+
+                # encode url
+                base_url = reverse("polls:login")
+                params_url = urlencode(params)
+                url = f"{base_url}?{params_url}"
+
+                # redirect
+                return HttpResponseRedirect(url)
 
         except KeyError:
             context = {
@@ -128,42 +140,72 @@ class CreateQuestionView(View):
 
 class LoginView(View):
     def get(self, request: WSGIRequest):
+        params_url = f"?{query}" if (query := request.GET.urlencode()) else ""
         form = LoginForm()
         return render(
-            request, "polls/auth.html", context={"form": form, "name": "login"}
+            request,
+            "polls/auth.html",
+            context={
+                "form": form,
+                "name": "login",
+                "params": params_url,
+            },
         )
 
     def post(self, request: WSGIRequest):
+        params_url = f"?{query}" if (query := request.GET.urlencode()) else ""
+        next_url = request.GET.get("next") or reverse("polls:index")
         form = LoginForm(data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
 
-            return HttpResponseRedirect(reverse("polls:index"))
+            return HttpResponseRedirect(next_url)
 
         else:
             return render(
-                request, "polls/auth.html", context={"form": form, "name": "login"}
+                request,
+                "polls/auth.html",
+                context={
+                    "form": form,
+                    "name": "login",
+                    "params": params_url,
+                },
             )
 
 
 class RegisterView(View):
     def get(self, request: WSGIRequest):
+        params_url = f"?{query}" if (query := request.GET.urlencode()) else ""
         form = UserCreationForm()
         return render(
-            request, "polls/auth.html", context={"form": form, "name": "register"}
+            request,
+            "polls/auth.html",
+            context={
+                "form": form,
+                "name": "register",
+                "params": params_url,
+            },
         )
 
     def post(self, request: WSGIRequest):
+        params_url = f"?{query}" if (query := request.GET.urlencode()) else ""
+        next_url = request.GET.get("next") or reverse("polls:index")
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return HttpResponseRedirect(reverse("polls:index"))
+            return HttpResponseRedirect(next_url)
 
         else:
             return render(
-                request, "polls/auth.html", context={"form": form, "name": "register"}
+                request,
+                "polls/auth.html",
+                context={
+                    "form": form,
+                    "name": "register",
+                    "params": params_url,
+                },
             )
 
 
