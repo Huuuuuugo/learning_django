@@ -9,7 +9,7 @@ from django.db.models import F
 from django.shortcuts import render, get_object_or_404
 from django.core.handlers.wsgi import WSGIRequest
 from django.contrib.auth.models import User
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import Question, Choice
@@ -25,6 +25,7 @@ class IndexView(generic.ListView):
         Return the last five published questions (not including those set to be
         published in the future).
         """
+        print(self.request.user)
         return Question.objects.filter(pub_date__lte=timezone.now()).order_by(
             "-pub_date"
         )[:5]
@@ -164,3 +165,11 @@ class RegisterView(View):
             return render(
                 request, "polls/auth.html", context={"form": form, "name": "register"}
             )
+
+
+class LogoutView(generic.RedirectView):
+    pattern_name = "polls:index"
+
+    def get_redirect_url(self, *args, **kwargs):
+        logout(self.request)
+        return super().get_redirect_url(*args, **kwargs)

@@ -11,4 +11,5 @@ urlpatterns = [
     path("<int:question_id>/vote/", views.VoteView.as_view(), name="vote"),
     path("login/", views.LoginView.as_view(), name="login"),
     path("register/", views.RegisterView.as_view(), name="register"),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
 ]
