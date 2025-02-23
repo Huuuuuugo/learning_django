@@ -1,5 +1,6 @@
 from enum import Enum
 from urllib.parse import urlencode
+from ast import literal_eval
 
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
@@ -76,8 +77,21 @@ class CreateQuestionView(View):
         MISSING_KEYS = "The request body must contain the keys 'question' and 'choices'"
         EMPTY_QUESTION = "The 'question' key can not be empty"
 
-    def get(self, request):
-        return render(request, "polls/create.html")
+    def get(self, request: WSGIRequest):
+        question_text = request.GET.get("question") or ""
+        choices = request.GET.get("choices") or []
+        if choices:
+            choices = literal_eval(choices)
+
+        return render(
+            request,
+            "polls/create.html",
+            context={
+                "question": question_text,
+                "choices": choices,
+                "choice_count": len(choices),
+            },
+        )
 
     def post(self, request: WSGIRequest):
         # TODO: add date field
@@ -116,7 +130,11 @@ class CreateQuestionView(View):
                     question.choice_set.create(choice_text=choice)
             else:
                 # get params
-                params = {"next": reverse("polls:create")}
+                params = {
+                    "next": reverse("polls:create"),
+                    "question": question_text,
+                    "choices": choices,
+                }
 
                 # encode url
                 base_url = reverse("polls:login")
@@ -160,7 +178,22 @@ class LoginView(View):
             user = form.get_user()
             login(request, user)
 
-            return HttpResponseRedirect(next_url)
+            url = next_url
+            if params_url:
+                question_text = request.GET.get("question") or ""
+                choices = request.GET.get("choices") or []
+                if choices:
+                    choices = literal_eval(choices)
+
+                params = {
+                    "question": question_text,
+                    "choices": choices,
+                }
+
+                params_url = urlencode(params)
+                url = f"{next_url}?{params_url}"
+
+            return HttpResponseRedirect(url)
 
         else:
             return render(
@@ -195,7 +228,23 @@ class RegisterView(View):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return HttpResponseRedirect(next_url)
+
+            url = next_url
+            if params_url:
+                question_text = request.GET.get("question") or ""
+                choices = request.GET.get("choices") or []
+                if choices:
+                    choices = literal_eval(choices)
+
+                params = {
+                    "question": question_text,
+                    "choices": choices,
+                }
+
+                params_url = urlencode(params)
+                url = f"{next_url}?{params_url}"
+
+            return HttpResponseRedirect(url)
 
         else:
             return render(
