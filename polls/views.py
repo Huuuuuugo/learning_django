@@ -49,26 +49,42 @@ class VoteView(View):
     class ErrorMessages(Enum):
         INVALID_CHOICE = "Please select one of the options below."
 
-    def post(self, request, question_id):
-        question = get_object_or_404(Question, pk=question_id)
-        try:
-            choice = question.choice_set.get(pk=request.POST["choice"])
-        except (KeyError, Choice.DoesNotExist):
-            return render(
-                request,
-                "polls/details.html",
-                context={
-                    "question": question,
-                    "error_message": self.ErrorMessages.INVALID_CHOICE.value,
-                },
-            )
-        else:
-            choice.votes = (
-                F("votes") + 1
-            )  # Performs the update directly on the database
-            choice.save()
+    def post(self, request: WSGIRequest, question_id: int):
+        if request.user.is_authenticated:
+            question = get_object_or_404(Question, pk=question_id)
+            try:
+                choice = question.choice_set.get(pk=request.POST["choice"])
+            except (KeyError, Choice.DoesNotExist):
+                return render(
+                    request,
+                    "polls/details.html",
+                    context={
+                        "question": question,
+                        "error_message": self.ErrorMessages.INVALID_CHOICE.value,
+                    },
+                )
+            else:
+                choice.votes = (
+                    F("votes") + 1
+                )  # Performs the update directly on the database
+                choice.save()
 
-            return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
+                return HttpResponseRedirect(
+                    reverse("polls:results", args=(question.id,))
+                )
+
+        else:
+            next_url = reverse("polls:details", args=(question_id,))
+            params = {
+                "next": next_url,
+                "error": "You need to be authenticated in to vote.",
+            }
+
+            base_url = reverse("polls:login")
+            params_url = urlencode(params)
+            url = f"{base_url}?{params_url}"
+
+            return HttpResponseRedirect(url)
 
 
 class CreateQuestionView(View):
@@ -132,6 +148,7 @@ class CreateQuestionView(View):
                 # get params
                 params = {
                     "next": reverse("polls:create"),
+                    "error": "You need to be authenticated to create polls.",
                     "question": question_text,
                     "choices": choices,
                 }
@@ -159,6 +176,7 @@ class CreateQuestionView(View):
 class LoginView(View):
     def get(self, request: WSGIRequest):
         params_url = f"?{query}" if (query := request.GET.urlencode()) else ""
+        error_message = request.GET.get("error")
         form = LoginForm()
         return render(
             request,
@@ -167,6 +185,7 @@ class LoginView(View):
                 "form": form,
                 "name": "login",
                 "params": params_url,
+                "error_message": error_message,
             },
         )
 
@@ -210,6 +229,7 @@ class LoginView(View):
 class RegisterView(View):
     def get(self, request: WSGIRequest):
         params_url = f"?{query}" if (query := request.GET.urlencode()) else ""
+        error_message = request.GET.get("error")
         form = UserCreationForm()
         return render(
             request,
@@ -218,6 +238,7 @@ class RegisterView(View):
                 "form": form,
                 "name": "register",
                 "params": params_url,
+                "error_message": error_message,
             },
         )
 

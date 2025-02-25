@@ -6,6 +6,7 @@
 
 {% block body %}
 <form action="{% url "polls:"|add:name %}{{ params }}" method="post">
+    {% if error_message %}<ul class="errorlist"><li>{{ error_message }}</li></ul>{% endif %}
     {% csrf_token %}
     <fieldset>
         {{ form }}
