@@ -20,7 +20,10 @@ from django.urls import path, include
 
 from debug_toolbar.toolbar import debug_toolbar_urls
 
+from .views import RedirectToPolls
+
 urlpatterns = [
+    path("", RedirectToPolls.as_view()),
     path("admin/", admin.site.urls),
     path("polls/", include("polls.urls")),
 ] + debug_toolbar_urls()
