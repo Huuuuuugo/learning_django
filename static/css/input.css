@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+    --color-django-200: #c9f0dd;
+    --color-django-500: #44b78b;
+    --color-django-600: #187f58;
+    --color-django-900: #0c4b33;
+}
+
+@layer base {
+    input {
+        @apply border-1 rounded-md bg-gray-800 ml-2 mb-4 ps-2 p-1;
+    }
+
+    a {
+        @apply text-blue-300 hover:text-blue-400 visited:text-orange-400 hover:visited:text-orange-500
+    }
+
+    .helptext {
+        @apply text-xs text-amber-500 pl-2;
+    }
+
+    .errorlist {
+        @apply text-red-500;
+    }
+}
