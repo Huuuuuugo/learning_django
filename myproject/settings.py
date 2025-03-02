@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "UD~x6]mZK=fA/<p-J;>cz$?at)r:w3uS9V4[5y*&.!7jE{b(}FQ$P2w{#3V)X;R-,Cg8.%9N='nD>/:xhp?v^~KTqH(<[Gc_fr+B"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -61,16 +61,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if not TESTING:
-    INSTALLED_APPS = [
-        *INSTALLED_APPS,
-        "debug_toolbar",
-    ]
-
-    MIDDLEWARE = [
-        *MIDDLEWARE,
-        "debug_toolbar.middleware.DebugToolbarMiddleware",
-    ]
 
 ROOT_URLCONF = "myproject.urls"
 
