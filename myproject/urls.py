@@ -17,8 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-
-from debug_toolbar.toolbar import debug_toolbar_urls
+from django.conf import settings
 
 from .views import RedirectToPolls
 
@@ -26,4 +25,9 @@ urlpatterns = [
     path("", RedirectToPolls.as_view()),
     path("admin/", admin.site.urls),
     path("polls/", include("polls.urls")),
-] + debug_toolbar_urls()
+]
+
+if settings.DEBUG:
+    from debug_toolbar.toolbar import debug_toolbar_urls
+
+    urlpatterns += debug_toolbar_urls()
